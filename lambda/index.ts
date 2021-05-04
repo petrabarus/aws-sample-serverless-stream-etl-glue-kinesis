@@ -13,7 +13,9 @@ async function putRecords() {
     const data = {
         unitname: funcId,
         serialnumber: faker.datatype.uuid(),
-        time: faker.date.recent(),
+        name: faker.name.firstName + ' ' + faker.name.lastName,
+        origin: faker.address.state,
+        time: new Date().valueOf(),
         temperature: faker.datatype.number({min: 3500, max: 4000}) / 100,
     };
     

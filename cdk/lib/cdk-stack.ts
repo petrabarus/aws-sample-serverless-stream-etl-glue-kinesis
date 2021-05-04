@@ -28,7 +28,11 @@ export class CdkStack extends cdk.Stack {
   }
   
   createStream() {
-    this.stream = new kinesis.Stream(this, 'Stream', {});
+    this.stream = new kinesis.Stream(this, 'Stream', {
+      encryption: kinesis.StreamEncryption.UNENCRYPTED
+    });
+    
+    new cdk.CfnOutput(this, 'StreamName', { value: this.stream.streamName });
   }
   
   createProducers() {
@@ -73,7 +77,7 @@ export class CdkStack extends cdk.Stack {
   }
   
   createEtlRole() {
-    const glueRole = new iam.Role(this, 'EtlGlueRole', {
+    const glueRole = new iam.Role(this, 'EtlGlueRole', {  
       assumedBy: new iam.ServicePrincipal('glue.amazonaws.com'),
     });
     const gluePolicy = iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSGlueServiceRole');
