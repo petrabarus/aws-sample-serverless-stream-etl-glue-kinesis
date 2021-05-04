@@ -35,11 +35,11 @@ export class CdkStack extends cdk.Stack {
     });
     
     Array(5).fill(0).map((_, i) => {
-      //const lambdaFunc = this.createProducerFunction(i, role);
-      //rule.addTarget(new targets.LambdaFunction(lambdaFunc));
+      const lambdaFunc = this.createProducerFunction(i, role);
+      rule.addTarget(new targets.LambdaFunction(lambdaFunc));
     });
     
-    this.stream.grantRead(role);
+    this.stream.grantWrite(role);
   }
   
   createFunctionRole(): iam.Role {
@@ -52,19 +52,20 @@ export class CdkStack extends cdk.Stack {
     });
   }
   
-  // createProducerFunction(i: number, role: iam.Role): lambda.Function {
-  //   const assetPath = path.join(__dirname, '../../lambda');
-  //   const asset = lambda.Code.fromAsset(assetPath);
+  createProducerFunction(i: number, role: iam.Role): lambda.Function {
+    const assetPath = path.join(__dirname, '../../lambda');
+    const asset = lambda.Code.fromAsset(assetPath);
     
-  //   return new lambda.Function(this, 'ProducerFunction' + i, {
-  //     runtime: lambda.Runtime.NODEJS_14_X,
-  //     handler: 'index.handler',
-  //     role,
-  //     code: asset,
-  //     environment: {
-  //       FUNCTION_INDEX: 'func-' + i,
-  //       STREAM_NAME: this.stream.streamName,
-  //     }
-  //   });
-  // }
+    return new lambda.Function(this, 'ProducerFunction' + i, {
+      runtime: lambda.Runtime.NODEJS_14_X,
+      handler: 'index.handler',
+      role,
+      code: asset,
+      timeout: cdk.Duration.minutes(3),
+      environment: {
+        FUNCTION_INDEX: 'func-' + i,
+        STREAM_NAME: this.stream.streamName,
+      }
+    });
+  }
 }
