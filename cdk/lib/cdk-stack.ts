@@ -16,12 +16,15 @@ export class CdkStack extends cdk.Stack {
     this.createBucket();
     this.createStream();
     this.createProducers();
+    this.createEtlRole();
   }
   
   createBucket() {
     this.bucket = new s3.Bucket(this, 'Bucket', {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
+    
+    new cdk.CfnOutput(this, 'BucketName', { value: this.bucket.bucketName });
   }
   
   createStream() {
@@ -34,11 +37,11 @@ export class CdkStack extends cdk.Stack {
       schedule: events.Schedule.expression('rate(1 minute)')
     });
     
-    Array(5).fill(0).map((_, i) => {
+    const producerCount = 5;
+    for (let i = 0;  i < producerCount; i++) {
       const lambdaFunc = this.createProducerFunction(i, role);
       rule.addTarget(new targets.LambdaFunction(lambdaFunc));
-    });
-    
+    }
     this.stream.grantWrite(role);
   }
   
@@ -46,7 +49,7 @@ export class CdkStack extends cdk.Stack {
     const managedPolicies = new Array<iam.IManagedPolicy>();
     managedPolicies.push(iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSLambdaBasicExecutionRole'));
     
-    return new iam.Role(this, 'ServiceRole', {
+    return new iam.Role(this, 'LambdaServiceRole', {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
       managedPolicies,
     });
@@ -67,5 +70,27 @@ export class CdkStack extends cdk.Stack {
         STREAM_NAME: this.stream.streamName,
       }
     });
+  }
+  
+  createEtlRole() {
+    const glueRole = new iam.Role(this, 'EtlGlueRole', {
+      assumedBy: new iam.ServicePrincipal('glue.amazonaws.com'),
+    });
+    const gluePolicy = iam.ManagedPolicy.fromAwsManagedPolicyName('service-role/AWSGlueServiceRole');
+    glueRole.addManagedPolicy(gluePolicy);
+    
+    const streamPolicy = new iam.PolicyStatement({
+      effect: iam.Effect.ALLOW,
+      resources: [
+        this.stream.streamArn,
+      ],
+      actions: [
+        'kinesis:DescribeStream',
+      ]
+    });
+    
+    this.stream.grantRead(glueRole);
+    glueRole.addToPolicy(streamPolicy);
+    this.bucket.grantReadWrite(glueRole);
   }
 }

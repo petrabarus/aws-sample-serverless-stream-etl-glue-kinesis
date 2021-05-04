@@ -11,8 +11,8 @@ async function putRecords() {
     const client = new KinesisClient({ region: process.env.AWS_REGION });
     
     const data = {
-        unitName: funcId,
-        serialNumber: faker.datatype.uuid(),
+        unitname: funcId,
+        serialnumber: faker.datatype.uuid(),
         time: faker.date.recent(),
         temperature: faker.datatype.number({min: 3500, max: 4000}) / 100,
     };
